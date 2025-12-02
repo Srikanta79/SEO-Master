@@ -1,0 +1,416 @@
+<!-- 
+    PROJECT: Open Source YouTube Tag Generator (Fixed Copy Button)
+    LICENSE: MIT License
+    API: Google Suggest Queries (Free)
+-->
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Tag Generator (Free & Open Source)</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #f8f9fa;
+            --primary: #ff0000;
+            --border: #dee2e6;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --card-bg: #2d2d2d;
+            --primary: #ff4d4d;
+            --border: #404040;
+            --shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 { margin: 0; font-size: 24px; }
+        h1 span { color: var(--primary); }
+
+        .theme-toggle {
+            cursor: pointer;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .search-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-size: 16px;
+            min-width: 200px;
+        }
+
+        button.main-btn {
+            padding: 15px 25px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        button.main-btn:hover { opacity: 0.9; }
+
+        .results-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 150px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .tags-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .tag span.remove {
+            cursor: pointer;
+            color: var(--primary);
+            font-weight: bold;
+            padding: 0 4px;
+        }
+
+        .tag span.remove:hover {
+            background: rgba(255,0,0,0.1);
+            border-radius: 50%;
+        }
+
+        .action-bar {
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-color);
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: 0.2s;
+        }
+
+        .btn-sm:hover { background: var(--border); transform: translateY(-1px); }
+        
+        .btn-copy { background: #2ecc71; color: white; border: none; }
+        .btn-copy:hover { background: #27ae60; }
+
+        .loading {
+            text-align: center;
+            color: #888;
+            display: none;
+            padding: 20px;
+        }
+
+        footer {
+            margin-top: 50px;
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+        }
+        
+        /* টোস্ট নোটিফিকেশন ডিজাইন */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 5px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+        }
+        #toast.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        }
+        @keyframes fadein {
+            from {bottom: 0; opacity: 0;}
+            to {bottom: 30px; opacity: 1;}
+        }
+        @keyframes fadeout {
+            from {bottom: 30px; opacity: 1;}
+            to {bottom: 0; opacity: 0;}
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>YT <span>TagGenerator</span></h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 থিম</button>
+        </header>
+
+        <div class="search-area">
+            <input type="text" id="keyword" placeholder="ভিডিওর টপিক লিখুন... (যেমন: Cooking Vlogs)" onkeypress="handleEnter(event)">
+            <button class="main-btn" onclick="getTags()">জেনারেট করুন</button>
+        </div>
+
+        <div class="results-box">
+            <div id="loader" class="loading">
+                <span style="display:inline-block; animation: spin 1s linear infinite;">⏳</span> খুঁজছি...
+            </div>
+            
+            <div id="tagsContainer" class="tags-grid">
+                <div style="color: #888; width: 100%; text-align: center; padding: 20px;">
+                    কিওয়ার্ড লিখুন এবং জেনারেট বাটনে চাপ দিন
+                </div>
+            </div>
+
+            <div class="action-bar" id="actionBar" style="display: none;">
+                <div style="font-size: 14px;">
+                    মোট: <strong id="count">0</strong> | 
+                    ক্যারেক্টার: <strong id="chars">0</strong>/500
+                </div>
+                <div class="btn-group">
+                    <button class="btn-sm btn-copy" onclick="copyToClipboard()">
+                        📋 কপি করুন
+                    </button>
+                    <button class="btn-sm" onclick="clearTags()" style="color: #e74c3c; border-color: #e74c3c;">
+                        🗑️ মুছুন
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- টোস্ট নোটিফিকেশন -->
+    <div id="toast">ট্যাগ কপি হয়েছে!</div>
+
+    <footer>
+        <p>Open Source & Free Tool</p>
+    </footer>
+
+    <script>
+        let tagsList = [];
+
+        // ১. ডেটা ফ্রেচ করা
+        function getTags() {
+            const input = document.getElementById('keyword').value.trim();
+            if(!input) return showToast('দয়া করে কিছু লিখুন!');
+
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('tagsContainer').innerHTML = '';
+            document.getElementById('actionBar').style.display = 'none';
+
+            // Google Suggest API কল (JSONP)
+            const script = document.createElement('script');
+            const callbackName = 'cb_' + Date.now();
+            
+            window[callbackName] = function(data) {
+                document.getElementById('loader').style.display = 'none';
+                
+                const suggestions = data[1];
+                tagsList = [];
+
+                if(suggestions && suggestions.length > 0) {
+                    suggestions.forEach(item => tagsList.push(item[0]));
+                    renderTags();
+                } else {
+                    document.getElementById('tagsContainer').innerHTML = 
+                        '<span style="width:100%; text-align:center;">কোনো ট্যাগ পাওয়া যায়নি।</span>';
+                }
+                
+                // ক্লিনআপ
+                delete window[callbackName];
+                script.remove();
+            };
+
+            script.src = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(input)}&callback=${callbackName}`;
+            document.body.appendChild(script);
+        }
+
+        // ২. রেন্ডার ফাংশন
+        function renderTags() {
+            const container = document.getElementById('tagsContainer');
+            container.innerHTML = '';
+
+            tagsList.forEach((tag, index) => {
+                const div = document.createElement('div');
+                div.className = 'tag';
+                div.innerHTML = `${tag} <span class="remove" onclick="removeTag(${index})">×</span>`;
+                container.appendChild(div);
+            });
+
+            updateStats();
+            document.getElementById('actionBar').style.display = 'flex';
+        }
+
+        // ৩. ট্যাগ ডিলিট
+        function removeTag(index) {
+            tagsList.splice(index, 1);
+            renderTags();
+        }
+
+        // ৪. সব ক্লিয়ার
+        function clearTags() {
+            tagsList = [];
+            renderTags();
+            document.getElementById('keyword').value = '';
+            document.getElementById('actionBar').style.display = 'none';
+        }
+
+        // ৫. স্ট্যাটাস আপডেট
+        function updateStats() {
+            document.getElementById('count').innerText = tagsList.length;
+            const charCount = tagsList.join(',').length;
+            const charElem = document.getElementById('chars');
+            charElem.innerText = charCount;
+            
+            charElem.style.color = charCount > 500 ? 'red' : 'inherit';
+        }
+
+        // ৬. ফিক্সড কপি ফাংশন (Universal Fallback)
+        function copyToClipboard() {
+            const textToCopy = tagsList.join(', ');
+            
+            if (!textToCopy) return;
+
+            // মেথড ১: আধুনিক ব্রাউজার (যদি HTTPS বা Localhost হয়)
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast("ট্যাগ কপি হয়েছে!");
+                }).catch(err => {
+                    // যদি ফেইল করে, মেথড ২ তে যাবে
+                    fallbackCopy(textToCopy);
+                });
+            } else {
+                // মেথড ২: পুরনো বা লোকাল ফাইল সিস্টেমের জন্য (Universal Fallback)
+                fallbackCopy(textToCopy);
+            }
+        }
+
+        // ফলব্যাক কপি মেকানিজম (Hidden TextArea ব্যবহার করে)
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // এলিমেন্টটি যাতে দেখা না যায় কিন্তু পেজে থাকে
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if(successful) {
+                    showToast("ট্যাগ কপি হয়েছে!");
+                } else {
+                    showToast("কপি করা যায়নি, ম্যানুয়ালি কপি করুন।");
+                }
+            } catch (err) {
+                console.error('Copy failed', err);
+                showToast("এরর! কপি হয়নি।");
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // ৭. টোস্ট নোটিফিকেশন দেখানো
+        function showToast(message) {
+            const x = document.getElementById("toast");
+            x.innerText = message;
+            x.className = "show";
+            setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+        }
+
+        // ৮. থিম ও ইনপুট হ্যান্ডলার
+        function toggleTheme() {
+            const body = document.body;
+            body.setAttribute('data-theme', body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        }
+
+        function handleEnter(e) {
+            if(e.key === 'Enter') getTags();
+        }
+    </script>
+
+</body>
+</html>
